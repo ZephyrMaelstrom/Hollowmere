@@ -683,13 +683,13 @@ function codex(ui, data, panel) {
   const grid = el('div', { class: 'codex-grid' });
   for (const sp of list) {
     const stg = g.codexStage(sp.id);
-    const card = el('div', { class: `cx s${stg}` + (ui.codexSel === sp.id ? ' sel' : ''), onclick: () => { ui.codexSel = sp.id; ui.renderPanel(); } },
+    const card = el('div', { class: `cx s${stg}` + (ui.codexSel === sp.id ? ' sel' : ''), onclick: () => { ui.codexSel = sp.id; ui.renderPanel(); if (innerWidth < 720) document.getElementById('codex-detail')?.scrollIntoView({ behavior: 'smooth' }); } },
       el('img', { src: spIcon(sp.id) }), el('div', { class: 'nm' }, stg ? sp.name : '???'), el('div', { class: 'stars' }, '★'.repeat(stg) + '☆'.repeat(4 - stg)));
     grid.appendChild(card);
   }
   left.appendChild(grid);
   body.appendChild(left);
-  const right = el('div', {});
+  const right = el('div', { id: 'codex-detail' });
   const sel = SPECIES[ui.codexSel];
   if (sel && sel.k === tab) right.appendChild(codexEntry(ui, sel));
   else right.appendChild(el('p', { class: 'muted' }, 'Pick a species to see what you know about it.'));
