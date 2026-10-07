@@ -187,7 +187,7 @@ export class UI {
     s.tips ||= {};
     if (s.tips[id] || (this.tipQ || []).some((t) => t.id === id)) return;
     (this.tipQ ||= []).push({ id, title, text });
-    if (!this.tipOpen) this.nextTip();
+    if (!this.tipOpen && !this.panel && !this.inDialogue()) this.nextTip();
   }
   nextTip() {
     const card = this.$('tipcard');
@@ -195,6 +195,7 @@ export class UI {
     if (!t) { card.classList.add('hidden'); this.tipOpen = false; return; }
     this.tipOpen = true;
     this.game.state.tips[t.id] = true;
+    this.curTip = t;
     card.innerHTML = '';
     card.appendChild(el('div', { class: 'tt' }, t.title));
     card.appendChild(el('p', {}, t.text));
@@ -271,6 +272,7 @@ export class UI {
     this.sel = null;
     this.$('panel-wrap').classList.remove('hidden');
     document.body.classList.add('panel-open');
+    if (this.tipOpen && this.curTip) { this.$('tipcard').classList.add('hidden'); this.tipOpen = false; delete this.game.state.tips[this.curTip.id]; (this.tipQ ||= []).unshift(this.curTip); this.curTip = null; }
     this.renderPanel();
     this.audio?.play('open');
   }
@@ -281,6 +283,7 @@ export class UI {
     this.$('panel-wrap').classList.add('hidden');
     document.body.classList.remove('panel-open');
     this.hideTip();
+    if (!this.tipOpen && (this.tipQ || []).length) setTimeout(() => { if (!this.panel && !this.tipOpen) this.nextTip(); }, 400);
     this.game.state.stats.panelsClosed = (this.game.state.stats.panelsClosed || 0) + 1;
   }
   renderPanel() {

@@ -766,12 +766,28 @@ function journal(ui, data, panel) {
       for (const { p } of pages) { any = true; body.appendChild(el('details', { class: 'box', style: { marginBottom: '4px' } }, el('summary', { style: { cursor: 'pointer', fontFamily: 'var(--pix)' } }, p.title), el('p', {}, p.text))); }
     }
     if (!any) body.prepend(el('p', { class: 'muted' }, 'Your grandmother left pages in stone cairns across the valley. Find them and they\'ll be kept here.'));
+  } else if (tab === 'guide') {
+    const G = [
+      ['The Strand', 'Every Hummer, Grove and Flitter carries twelve Threads. Each Thread holds two alleles: one shown, one hidden. Dominant alleles (red in the Lens) are shown over recessive ones (blue). If both are dominant, or both recessive, the first one shows.'],
+      ['Inheritance', 'Each offspring takes one random allele per Thread from each parent. Two different parents give a mix; two identical purebred parents always breed true. A purebred has matching alleles on all twelve Threads.'],
+      ['Mutation', 'When two different Lineages that can combine meet, each offspring has a chance to inherit a brand new species instead. The Forecast in a hive or cradle shows the odds. Skeps never mutate. Hive Boxes and Hivespires do. Some mutations only happen in one region, season, time of day or festival.'],
+      ['Better odds', 'Spring makes the Strand restless (+15%). Catalyst Frames double mutation chance but shorten lives. A Quickwing nearby adds 25%. Field Notes from the Warden\'s Desk add 10% of the base odds each, up to five. Stilling Frames and the Steady Heart module stop mutation entirely, for purifying lines.'],
+      ['Climate', 'Each species has a home temperature and humidity it can never lose. Its Warmth and Damp Threads say how far from home it will still work. Breed a hardy allele into a line to move it, use Hivespire modules, or lean on a Glacier (Chill) or Brimstone (Kindle) hive nearby.'],
+      ['Working', 'A Matron works every 20 seconds if: the climate suits her, her own blossom grows within her Reach, it is her time of day (or the area is lit), and it isn\'t raining (unless she is Rainproof). She only ages while working. Specialty products like Crownmilk need her exact home climate: thriving.'],
+      ['Couriers and lines', 'Load a whole stack of Couriers: each new Matron takes the next. To keep crossing toward a mutation, keep feeding Couriers of the other species. To stabilise, breed a line with itself in a Skep, with Stilling Frames.'],
+      ['Worn lines', 'Wild Heiresses are usually pristine. Worn ones sometimes fail to leave a daughter. Heartsap Tonic restores a line; a Balmwing nearby stops failures.'],
+      ['Groves', 'Scions grow into trees that fruit, blossom and drop Scions. Hummers carry pollen between trees within their Reach; Flitters carry it twice as far. A pollinated tree shows pale blossom and drops a hybrid Scion about 40 seconds later (two with a Grafting Knife).'],
+      ['Flitters', 'A Flitter settles on a mature Grove whose blossom it hosts on. It pollinates, spins cocoons and lays new generations, mixing with colonies nearby. Pair two in a Chrysal Cradle for controlled breeding; hatch Chrysals there too.'],
+      ['Seasons', 'Each real day is a season: spring (faster growth, more mutation), summer (more honey), autumn (more fruit), winter (slower). Every season has a festival during its nights (or days, in summer), and once a week the sun is swallowed.'],
+      ['Automation', 'Hives and machines push their output into any Runnel pointing away from them. Runnels deliver into machines, chests, hives (Heiresses, Couriers, frames) and cradles. Strand Gates turn matching items left. Groundskeepers gather tree drops within four tiles.'],
+    ];
+    for (const [h, t] of G) { body.appendChild(el('h3', {}, h)); body.appendChild(el('p', {}, t)); }
   } else if (tab === 'stats') {
     const S = s.stats;
     const rows = [['Hives scooped', S.hivesScooped], ['Generations bred', S.generations], ['Mutation finds', Object.values(s.codex).filter((v) => v >= 3).length], ['Groves planted', S.scionsPlanted], ['Hybrid scions', S.hybrids], ['Pollinations', S.pollinations], ['Flitters caught', S.flittersCaught], ['Combs spun', S.combsSpun], ['Orders filled', S.orders], ['Crowns earned', S.crownsEarned], ['Lore pages', S.lore], ['Days visited', s.daily.streak + ' in a row']];
     body.appendChild(el('div', { class: 'kv' }, ...rows.flatMap(([k, v]) => [el('span', {}, k), el('span', {}, String(v || 0))])));
   }
-  return { title: 'Journal', body, icon: icon('candle'), tabs: [['quest', 'Quest'], ['home', 'Mail & basket'], ['lore', 'Lore'], ['stats', 'Records']] };
+  return { title: 'Journal', body, icon: icon('candle'), tabs: [['quest', 'Quest'], ['home', 'Mail & basket'], ['lore', 'Lore'], ['guide', 'Field guide'], ['stats', 'Records']] };
 }
 
 function homeExtras(ui) {
