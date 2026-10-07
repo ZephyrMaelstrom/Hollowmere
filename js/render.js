@@ -212,6 +212,7 @@ export class Renderer {
     const region = g.regionAt(p.x, p.y);
     if (T.rainingIn(g.now, region)) this.drawRain(region === 'rimeback', now);
     if (region === 'ashvent') this.drawAsh(now);
+    if (region !== 'hollow') this.drawFestival(T.festivalsAt(g.now), now);
     // lighting
     this.drawLight(region);
     // highlight
@@ -421,6 +422,33 @@ export class Renderer {
     ctx.stroke();
     ctx.fillStyle = snow ? 'rgba(220,230,255,0.08)' : 'rgba(40,60,90,0.12)';
     ctx.fillRect(0, 0, w, h);
+  }
+
+  // Festivals change the look of the world while they last.
+  drawFestival(fest, now) {
+    if (!fest.size) return;
+    const ctx = this.ctx, w = this.cv.width, h = this.cv.height, z = this.zoom;
+    const motes = (n, col, speed, size = 1) => {
+      for (let i = 0; i < n; i++) {
+        const x = (hash2(i, 11, 3) * w + Math.sin(now / 1700 + i) * 30 * z) % w;
+        const y = (hash2(i, 12, 3) * h + now / speed * (0.4 + hash2(i, 13, 3))) % h;
+        const a = 0.4 + 0.6 * Math.abs(Math.sin(now / 600 + i));
+        ctx.fillStyle = col.replace('A', a.toFixed(2));
+        ctx.fillRect(x, y, size * z, size * z);
+      }
+    };
+    if (fest.has('harvestmoon')) {
+      ctx.fillStyle = 'rgba(255,170,60,0.08)'; ctx.fillRect(0, 0, w, h);
+      const r = 28 * this.dpr;
+      const grd = ctx.createRadialGradient(w - 90 * this.dpr, 130 * this.dpr, r * 0.4, w - 90 * this.dpr, 130 * this.dpr, r * 2.4);
+      grd.addColorStop(0, 'rgba(255,214,140,0.95)'); grd.addColorStop(0.4, 'rgba(255,190,90,0.35)'); grd.addColorStop(1, 'rgba(255,160,60,0)');
+      ctx.fillStyle = grd; ctx.fillRect(w - 90 * this.dpr - r * 2.4, 130 * this.dpr - r * 2.4, r * 4.8, r * 4.8);
+      motes(30, 'rgba(255,200,90,A)', 90);
+    }
+    if (fest.has('midwinter')) { ctx.fillStyle = 'rgba(200,220,255,0.06)'; ctx.fillRect(0, 0, w, h); motes(70, 'rgba(255,255,255,A)', 25, 1); }
+    if (fest.has('thaw')) motes(45, 'rgba(160,255,190,A)', 160, 1);
+    if (fest.has('longday')) { ctx.fillStyle = 'rgba(255,230,140,0.07)'; ctx.fillRect(0, 0, w, h); motes(25, 'rgba(255,240,170,A)', 140, 1); }
+    if (fest.has('eclipse')) motes(40, 'rgba(200,180,255,A)', 200, 1);
   }
 
   drawAsh(now) {

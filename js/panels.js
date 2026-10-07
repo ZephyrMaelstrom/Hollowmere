@@ -869,6 +869,17 @@ function orders(ui) {
   };
   for (const o of s.daily.orders) body.appendChild(card(o, false));
   if (s.daily.grand) body.appendChild(card(s.daily.grand, true));
+  // Prize Fair
+  const f = st.fair();
+  const [bt, stt] = st.fairTiers(f.thread);
+  body.appendChild(el('h3', {}, `This week's Prize Fair: best ${THREAD_INFO[f.thread].name}`));
+  body.appendChild(el('p', { class: 'faint' }, `Show a read Hummer, Scion or Flitter. Bronze for ${ALLELE_INDEX[f.thread][bt].name} or better, Silver for ${ALLELE_INDEX[f.thread][stt].name} or better, Gold for a Silver specimen that is also purebred. Your specimen comes home with you.`));
+  body.appendChild(el('div', { class: 'row' }, ...[1, 2, 3].map((k) => el('span', { class: 'tag ' + (f.won.includes(k) ? 'gold' : '') }, `${['', 'Bronze', 'Silver', 'Gold'][k]} ${f.won.includes(k) ? '✓' : ''}`))));
+  const cands = s.inv.map((x, i) => ({ x, i })).filter(({ x }) => x && x.g && x.an).sort((a, b) => st.fairScore(b.x) - st.fairScore(a.x)).slice(0, 8);
+  if (!cands.length) body.appendChild(el('p', { class: 'faint' }, 'Carry some specimens whose Strand you have read.'));
+  const fg = el('div', { class: 'row', style: { marginTop: '6px' } });
+  for (const { x } of cands) fg.appendChild(el('div', { class: 'cslot' }, ui.slotEl(x, { onclick: () => { st.enterFair(x); ui.renderPanel(); } }), el('span', { class: 'lbl-sm' }, ['—', 'Bronze', 'Silver', 'Gold'][st.fairScore(x)])));
+  body.appendChild(fg);
   const ms = T.msToNextSeason(Date.now());
   body.appendChild(el('p', { class: 'faint' }, `New orders in ${fmtTime(ms / 1000)}. It is ${T.seasonName(Date.now())}; tomorrow brings ${SEASONS[(T.season(Date.now()) + 1) % 4]}.`));
   return { title: 'Order Board', body, icon: icon('candle'), narrow: false };

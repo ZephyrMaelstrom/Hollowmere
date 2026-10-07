@@ -485,7 +485,24 @@ export class Game {
     else if (stage === 4) this.toast(`${name} purebred line`, 'discover', { sp });
     this.addRenown(gained, true);
     this.emit('codex', { sp, stage, prev: cur });
+    if (stage >= 3 && cur < 3) this.codexMilestone();
     return true;
+  }
+  // Every five species bred earns a Guild reward.
+  codexMilestone() {
+    const s = this.state;
+    const bred = Object.values(s.codex).filter((v) => v >= 3).length;
+    s.milestones ||= {};
+    const step = Math.floor(bred / 5) * 5;
+    if (step < 5 || s.milestones[step]) return;
+    s.milestones[step] = true;
+    const prizes = ['waxed_frame', 'mulch', 'catalyst_frame', 'heartsap_tonic', 'gossamer_frame', 'mod_racks', 'prism_ink', 'steady_eye'];
+    const prize = prizes[Math.min(prizes.length - 1, step / 5 - 1)];
+    const crowns = 40 * step / 5;
+    this.addCrowns(crowns);
+    this.give(mk(prize, step >= 30 ? 1 : 2), false);
+    this.toast(`Codex milestone: ${step} species bred. The Guild sends ${crowns} Crowns and a gift.`, 'rank');
+    this.emit('milestone', step);
   }
   addRenown(n, quiet = false) {
     if (!n) return;

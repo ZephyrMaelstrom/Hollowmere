@@ -7,6 +7,7 @@ import { BIOMES, GATES } from './data/biomes.js';
 import { STRUCTURES } from './data/structures.js';
 import { mk, mkSpecimen, countIn, removeFrom, addToSlots } from './inv.js';
 import { wildGenome, val, isPure, condText, expressedId } from './genetics.js';
+import { ALLELES, THREAD_INFO } from './data/threads.js';
 import { WILD_HIVE } from './game.js';
 import { hash2, mulberry32, pick } from './util.js';
 import * as T from './time.js';
@@ -154,7 +155,7 @@ export class Story {
       used.add(id);
       const v = ITEMS[id].value;
       const target = 35 + Math.min(3, this.s.rank) * 30 + rnd() * 50;
-      const n = Math.max(1, Math.min(40, Math.round(target / v)));
+      const n = Math.max(1, Math.min(v <= 2 ? 15 : v <= 4 ? 25 : 40, Math.round(target / v)));
       orders.push({ kind: 'item', id, n, crowns: Math.round(v * n * 1.7 + 10), renown: 4 + this.s.rank * 2, done: false });
     }
     // a specimen order once species are being bred
@@ -171,10 +172,55 @@ export class Story {
     const rnd = mulberry32(d * 31337);
     const pool = this.orderPool().filter((id) => ITEMS[id].value >= 5);
     const id = pool.length ? pool[Math.floor(rnd() * pool.length)] : 'goldmel';
-    const n = Math.max(5, Math.round((250 + this.s.rank * 150) / ITEMS[id].value));
+    const n = Math.max(5, Math.min(50, Math.round((250 + this.s.rank * 150) / ITEMS[id].value)));
     const prizes = ['waxed_frame', 'catalyst_frame', 'gossamer_frame', 'heartsap_tonic', 'mod_racks', 'steady_eye'];
     const prize = prizes[Math.min(prizes.length - 1, this.s.rank + Math.floor(rnd() * 2))];
     return { kind: 'item', id, n, crowns: Math.round(ITEMS[id].value * n * 2.4 + 100), renown: 30 + this.s.rank * 10, prize, done: false };
+  }
+
+  // ───────── Prize Fair (weekly) ─────────
+  fair() {
+    const s = this.s, d = this.today();
+    const week = Math.floor((d + 3) / 7);
+    if (!s.daily.fair || s.daily.fair.week !== week) {
+      const threads = ['vigor', 'span', 'brood', 'reach', 'stature'];
+      s.daily.fair = { week, thread: threads[((week % threads.length) + threads.length) % threads.length], won: [], best: null };
+    }
+    return s.daily.fair;
+  }
+  fairTiers(thread) {
+    return { vigor: ['brisk', 'quick'], span: ['long', 'enduring'], brood: ['ample', 'teeming'], reach: ['wide', 'vast'], stature: ['medium', 'large'] }[thread];
+  }
+  // Score a specimen for this week's fair: 0 none, 1 bronze, 2 silver, 3 gold (silver and purebred).
+  fairScore(st) {
+    const f = this.fair();
+    if (!st || !st.g || !st.an) return 0;
+    const list = ALLELES[f.thread];
+    const idx = list.findIndex((a) => a.id === expressedId(st.g, f.thread));
+    const [b, sv] = this.fairTiers(f.thread).map((id) => list.findIndex((a) => a.id === id));
+    let t = idx >= sv ? 2 : idx >= b ? 1 : 0;
+    if (t === 2 && isPure(st.g)) t = 3;
+    return t;
+  }
+  enterFair(st) {
+    const g = this.game, f = this.fair();
+    const t = this.fairScore(st);
+    if (!t) { g.toast('The judges are not impressed. Read a better specimen\'s Strand first.', 'warn'); return 0; }
+    const prizes = { 1: { crowns: 40, renown: 4, name: 'Bronze' }, 2: { crowns: 100, renown: 10, name: 'Silver' }, 3: { crowns: 250, renown: 25, name: 'Gold', item: 'gossamer_frame' } };
+    let got = 0;
+    for (let k = 1; k <= t; k++) {
+      if (f.won.includes(k)) continue;
+      f.won.push(k);
+      const p = prizes[k];
+      g.addCrowns(p.crowns); g.addRenown(p.renown, true);
+      if (p.item) g.give(mk(p.item, 1), false);
+      g.toast(`${p.name} rosette at the Prize Fair: +${p.crowns} Crowns`, 'rank');
+      got++;
+    }
+    if (!got) g.toast('You already hold that rosette this week.', 'info');
+    g.stat('fairEntries');
+    g.emit('inv');
+    return t;
   }
 
   canDeliver(o) {
