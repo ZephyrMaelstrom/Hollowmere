@@ -39,27 +39,29 @@ C('lamppost', 1, { stone: 2, candle: 1, timber: 1 }, 'bench', 'lamppost');
 C('glassforge', 1, { stone: 16, waxed_timber: 4, propolis: 4 }, 'bench', 'glassforge');
 C('smeltery', 1, { stone: 20, amberglass: 2, waxed_timber: 4 }, 'bench', 'smeltery');
 C('alembic', 1, { amberglass: 4, iron_ingot: 2, waxed_timber: 4 }, 'bench', 'alembic');
-C('joiner', 1, { iron_ingot: 4, waxed_timber: 6, stone: 6 }, 'bench', 'joiner');
-C('gearset', 1, { iron_ingot: 2, waxed_timber: 1 }, 'bench', 'joiner');
-C('springcoil', 1, { iron_ingot: 4, waxed_timber: 2 }, 'bench', 'springcoil');
+C('joiner', 1, { iron_ingot: 4, waxed_timber: 6, seed_oil: 2 }, 'bench', 'joiner');
+C('gearset', 1, { iron_ingot: 2, waxed_timber: 1, seed_oil: 1 }, 'bench', 'joiner');
+C('springcoil', 1, { iron_ingot: 2, copper_ingot: 2, waxed_timber: 2 }, 'bench', 'springcoil');
 C('bellows', 1, { stone: 12, waxed_timber: 4, iron_ingot: 2 }, 'bench', 'bellows');
 C('gate', 1, { runnel: 1, amberglass: 1, propolis: 2 }, 'bench', 'gate');
 C('groundskeeper', 1, { waxed_timber: 4, gearset: 1, fiber: 6 }, 'bench', 'groundskeeper');
 C('grafting_knife', 1, { iron_ingot: 1, timber: 1 }, 'bench', 'grafting_knife');
 C('banner', 1, { silkwax_cloth: 1, timber: 2 }, 'bench', 'banner');
 C('hivespire', 1, { regal_panel: 4, amberglass: 4, gearset: 2 }, 'bench', 'hivespire');
-C('mod_warmer', 1, { amberglass: 2, peat: 6, gearset: 1 }, 'bench', 'modules');
-C('mod_cooler', 1, { amberglass: 2, ice_shard: 6, gearset: 1 }, 'bench', 'modules');
-C('mod_mister', 1, { amberglass: 2, silkwax_cloth: 1, gearset: 1 }, 'bench', 'modules');
-C('mod_drier', 1, { amberglass: 2, glass_grit: 6, gearset: 1 }, 'bench', 'modules');
+C('mod_warmer', 1, { amberglass: 2, peat: 6, copper_ingot: 1, gearset: 1 }, 'bench', 'modules');
+C('mod_cooler', 1, { amberglass: 2, ice_shard: 6, copper_ingot: 1, gearset: 1 }, 'bench', 'modules');
+C('mod_mister', 1, { amberglass: 2, spore: 6, copper_ingot: 1, gearset: 1 }, 'bench', 'modules');
+C('mod_drier', 1, { amberglass: 2, glass_grit: 6, copper_ingot: 1, gearset: 1 }, 'bench', 'modules');
 C('mod_canopy', 1, { silkwax_cloth: 3, waxed_timber: 2 }, 'bench', 'modules');
 C('mod_steady', 1, { gearset: 1, ice_shard: 4, crownmilk: 2 }, 'bench', 'modules2');
-C('mod_lantern', 1, { lumen_candle: 4, amberglass: 2, gearset: 1 }, 'bench', 'modules2');
+C('mod_lantern', 1, { lumen_candle: 4, glasswood: 2, gearset: 1 }, 'bench', 'modules2');
 C('mod_pulse', 1, { gearset: 2, void_propolis: 2, amberglass: 2 }, 'bench', 'modules2');
 C('mod_racks', 1, { gold_ingot: 2, regal_panel: 1, gearset: 1 }, 'bench', 'modules2');
 C('frost_ward', 1, { silkwax_cloth: 3, ice_shard: 16 }, 'bench', 'frost_ward');
 C('ember_lantern', 1, { ember_glass: 2, iron_ingot: 2, candle: 2 }, 'bench', 'ember_lantern');
 C('steady_eye', 1, { gem: 2, gold_ingot: 1, lens: 1 }, 'bench', 'steady_eye');
+C('conduit', 1, { heart_pollen: 3, heart_timber: 2, glasswood: 4, gearset: 2 }, 'bench', 'conduit');
+C('lamppost', 2, { lantern_fig: 2, glasswood: 1, stone: 2 }, 'bench', 'lamppost');
 
 // Machine recipes. out: [item, n, chance]
 export const MACHINE = {
@@ -116,7 +118,7 @@ R('chandlery', { cerewax: 1, glowspore: 3 }, [['lumen_candle', 1, 1]], 10);
 
 R('joiner', { timber: 1, cerewax: 1 }, [['waxed_timber', 1, 1]], 3);
 R('joiner', { waxed_timber: 2, cerewax: 2 }, [['waxed_frame', 1, 1]], 6);
-R('joiner', { iron_ingot: 2, waxed_timber: 1 }, [['gearset', 1, 1]], 8);
+R('joiner', { iron_ingot: 2, waxed_timber: 1, seed_oil: 1 }, [['gearset', 1, 1]], 8);
 R('joiner', { waxed_timber: 2, crownmilk: 3, pollenknot: 3 }, [['regal_panel', 1, 1]], 20);
 R('joiner', { prism_dust: 2, heartsap: 1 }, [['prism_ink', 1, 1]], 8);
 

@@ -45,6 +45,7 @@ export function newState() {
     unlocks: {},
     quest: { i: 0, done: {}, talked: {}, flags: {} },
     lore: {},
+    tips: {},
     stats: {},
     seenItems: {},
     daily: { day: -1, orders: [], streak: 0, basketDay: -1, hettieDay: -1, grand: null, grandWeek: -1 },
@@ -96,7 +97,7 @@ export class Game {
 
   on(ev, fn) { (this.listeners[ev] ||= []).push(fn); }
   emit(ev, data) { for (const fn of this.listeners[ev] || []) fn(data); }
-  toast(text, kind = 'info', icon = null) { this.emit('toast', { text, kind, icon }); }
+  toast(text, kind = 'info', icon = null) { if (!this.quiet) this.emit('toast', { text, kind, icon }); }
 
   // ───────── setup ─────────
   setupNew() {

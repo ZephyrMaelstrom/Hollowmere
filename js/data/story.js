@@ -197,7 +197,7 @@ export const QUESTS = [
     text: '"Then Prismwing and Silkspinner, on the Longest Day."', hint: 'Pair them in a Chrysal Cradle on a summer day.', reward: { renown: 60 } },
   { id: 'q34', act: 5, title: 'Wake the Heartroot', goal: { type: 'awake' },
     text: 'Plant the Heartwood on the isle. Keep a Verdant Matriarch working beside it. Let a Dawnwing settle in its leaves.',
-    hint: 'All three must be working at once, on the isle, close to the Heartroot.' },
+    hint: 'All three must be working at once, on the isle. The Matriarch still forages Orchard blossom: plant a Flower Bed of it beside her.' },
   { id: 'q35', act: 5, title: 'Heartwarden', goal: { type: 'talk', npc: 'tobin' },
     text: 'Tell Tobin.', hint: 'He already knows. Everyone knows. Go anyway.', reward: { renown: 100, crowns: 500 } },
 ];

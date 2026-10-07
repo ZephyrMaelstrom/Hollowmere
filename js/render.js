@@ -222,6 +222,42 @@ export class Renderer {
       ctx.strokeRect(this.sx(h.x) + 1, this.sy(h.y) + 1, (h.w || 1) * TS * z - 2, (h.h || 1) * TS * z - 2);
     }
     if (ui.ghost) this.drawGhost(ui.ghost);
+    if (ui.waypoint) this.drawWaypoint(ui.waypoint, now);
+  }
+
+  // An arrow at the screen edge pointing to the current quest's place.
+  drawWaypoint(wp, now) {
+    const ctx = this.ctx, z = this.zoom;
+    const px = this.sx(wp.x), py = this.sy(wp.y);
+    const W0 = this.cv.width, H0 = this.cv.height, m = 40 * this.dpr;
+    const onScreen = px > m && py > m && px < W0 - m && py < H0 - m;
+    const pulse = 0.6 + 0.4 * Math.sin(now / 250);
+    if (onScreen) {
+      const by = py - (wp.tall ? 30 : 22) * z - Math.abs(Math.sin(now / 300)) * 3 * z;
+      ctx.fillStyle = `rgba(242,200,75,${pulse})`;
+      ctx.beginPath(); ctx.moveTo(px, by + 6 * z); ctx.lineTo(px - 4 * z, by); ctx.lineTo(px + 4 * z, by); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#1a1410'; ctx.lineWidth = Math.max(1, z / 2); ctx.stroke();
+      return;
+    }
+    const cx = W0 / 2, cy = H0 / 2;
+    const ang = Math.atan2(py - cy, px - cx);
+    const r = Math.min((W0 / 2 - m) / Math.abs(Math.cos(ang) || 1e-6), (H0 / 2 - m) / Math.abs(Math.sin(ang) || 1e-6));
+    const ax = cx + Math.cos(ang) * r, ay = cy + Math.sin(ang) * r;
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang);
+    const sz = 9 * this.dpr;
+    ctx.fillStyle = `rgba(242,200,75,${0.75 + 0.25 * pulse})`;
+    ctx.beginPath(); ctx.moveTo(sz * 1.4, 0); ctx.lineTo(-sz, -sz); ctx.lineTo(-sz * 0.4, 0); ctx.lineTo(-sz, sz); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#1a1410'; ctx.lineWidth = 2 * this.dpr; ctx.stroke();
+    ctx.restore();
+    const dist = Math.round(Math.hypot(wp.x - this.game.state.player.x, wp.y - this.game.state.player.y));
+    ctx.font = `${12 * this.dpr}px "Pixelify Sans", monospace`;
+    ctx.textAlign = 'center';
+    const tx = ax - Math.cos(ang) * 26 * this.dpr, ty = ay - Math.sin(ang) * 26 * this.dpr + 4 * this.dpr;
+    const label = `${wp.label} · ${dist}`;
+    const w = ctx.measureText(label).width + 10 * this.dpr;
+    ctx.fillStyle = 'rgba(20,40,34,0.85)'; ctx.fillRect(tx - w / 2, ty - 13 * this.dpr, w, 18 * this.dpr);
+    ctx.fillStyle = '#f2c84b'; ctx.fillText(label, tx, ty);
+    ctx.textAlign = 'start';
   }
 
   drawFloor(e, frame) {

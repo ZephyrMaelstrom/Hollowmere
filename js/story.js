@@ -82,6 +82,38 @@ export class Story {
     return lines;
   }
 
+  // Where the current quest wants you to go, if anywhere: {x, y, label}
+  questTarget() {
+    const g = this.game, q = this.current();
+    if (!q) return null;
+    const p = g.state.player;
+    const goal = q.goal.type === 'all' ? q.goal.of.find((x) => !this.goalProgress(x).done) || q.goal : q.goal;
+    const nearest = (list) => list.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+    switch (goal.type) {
+      case 'talk': {
+        const n = g.npcs.find((x) => x.id === goal.npc);
+        return n ? { x: n.x, y: n.y, label: NPCS[goal.npc].name } : null;
+      }
+      case 'gate': {
+        const gp = g.world.poi.gates[goal.id];
+        return gp ? { x: gp.x + 0.5, y: gp.y + 0.5, label: GATES.find((x) => x.id === goal.id).name } : null;
+      }
+      case 'ferry': return { x: 64.5, y: 76.5, label: 'The dock' };
+      case 'awake': return { x: 64.5, y: 66, label: 'The Heartroot' };
+      case 'stat':
+        if (goal.key === 'hivesScooped') { const h = nearest(g.entsOfType('w').filter((w) => !w.gone && g.regionAt(w.x, w.y) === 'meadowfold')); return h ? { x: h.x + 0.5, y: h.y + 0.5, label: 'Wild hive' } : null; }
+        return null;
+      case 'codex': {
+        if (goal.stage === 1 && SPECIES[goal.sp].k === 'h') {
+          const h = nearest(g.entsOfType('w').filter((w) => !w.gone && w.sp === goal.sp));
+          return h ? { x: h.x + 0.5, y: h.y + 0.5, label: SPECIES[goal.sp].name + ' hive' } : null;
+        }
+        return null;
+      }
+    }
+    return null;
+  }
+
   // ───────── daily things ─────────
   today() { return T.localDayIndex(Date.now()); }
 
@@ -121,8 +153,8 @@ export class Story {
       for (let t = 0; t < 5 && used.has(id); t++) id = pool[Math.floor(rnd() * pool.length)];
       used.add(id);
       const v = ITEMS[id].value;
-      const target = 40 + this.s.rank * 40 + rnd() * 60;
-      const n = Math.max(1, Math.min(60, Math.round(target / v)));
+      const target = 35 + Math.min(3, this.s.rank) * 30 + rnd() * 50;
+      const n = Math.max(1, Math.min(40, Math.round(target / v)));
       orders.push({ kind: 'item', id, n, crowns: Math.round(v * n * 1.7 + 10), renown: 4 + this.s.rank * 2, done: false });
     }
     // a specimen order once species are being bred
@@ -305,7 +337,9 @@ export class Story {
   hettieTruth() {
     const s = this.s, d = this.today();
     if (s.daily.hettieDay === d) return { already: true, text: s.daily.hettieText };
-    const cands = MUTATIONS.filter((m) => !s.revealed[m.c + '|' + m.a + '|' + m.b] && (this.game.codexStage(m.c) < 3));
+    let cands = MUTATIONS.filter((m) => !s.revealed[m.c + '|' + m.a + '|' + m.b] && (this.game.codexStage(m.c) < 3));
+    const interesting = cands.filter((m) => m.c !== 'hearthling' && m.c !== 'tended');
+    if (interesting.length) cands = interesting;
     // prefer ones where you have seen at least one parent
     const known = cands.filter((m) => this.game.codexStage(m.a) >= 1 || this.game.codexStage(m.b) >= 1);
     const list = known.length ? known : cands;
@@ -353,6 +387,7 @@ export class Story {
       this.s.rank = 4;
       this.game.addRenown(0);
       this.game.give(mk('conduit', 1));
+      this.s.unlocks.conduit = true;
       this.game.emit('awake');
     }
   }

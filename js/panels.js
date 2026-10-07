@@ -117,7 +117,16 @@ function stackDetail(ui, st, extraButtons = []) {
     el('div', {}, el('div', { class: 'status' }, ui.stackTitle(st)), el('div', { class: 'faint' }, st.n > 1 ? `${st.n} in this stack` : d.cat === 'specimen' ? (KINGDOM_NAMES[d.kingdom] + ' specimen') : ''))));
   if (st.g) {
     const sp = SPECIES[st.sp];
-    if (st.id === 'heiress' || st.id === 'matron') box.appendChild(el('div', {}, st.pristine === false ? el('span', { class: 'tag bad' }, 'Worn line') : el('span', { class: 'tag gold' }, 'Pristine line'), el('span', { class: 'faint' }, ` generation ${st.gen || 0}`)));
+    if (st.id === 'heiress' || st.id === 'matron') {
+      box.appendChild(el('div', {}, st.pristine === false ? el('span', { class: 'tag bad' }, 'Worn line') : el('span', { class: 'tag gold' }, 'Pristine line'), el('span', { class: 'faint' }, ` generation ${st.gen || 0}`)));
+      if (st.pristine === false) {
+        const has = countIn(ui.game.state.inv, 'heartsap_tonic') > 0;
+        box.appendChild(el('div', { class: 'row' }, btn('Give Heartsap Tonic', () => {
+          if (!removeFrom(ui.game.state.inv, 'heartsap_tonic', 1)) return;
+          st.pristine = true; ui.toast('The line is pristine again.', 'good'); ui.game.emit('inv'); ui.renderPanel();
+        }, 'alt small', !has), el('span', { class: 'faint' }, has ? 'Restores this line to pristine.' : 'Heartsap Tonic would restore this line.')));
+      }
+    }
     box.appendChild(el('p', { class: 'muted' }, sp.lore));
     if (st.an) {
       box.appendChild(climateLine(sp, st.g));
@@ -1073,8 +1082,12 @@ function desk(ui, e) {
         ui.deskGame = { e: e.id, m, cards, open: [], focus: 6 + pairs - 4, maxFocus: 6 + pairs - 4 };
         g.emit('inv');
         ui.renderPanel();
-      }, 'small', notes >= 5)));
+      }, 'small', notes >= 5),
+      countIn(s.inv, 'prism_ink') > 0 && notes < 5 ? btn('Write with Prism Ink', () => {
+        removeFrom(s.inv, 'prism_ink', 1); s.notes[m.c] = (s.notes[m.c] || 0) + 1; g.stat('fieldNotes'); ui.toast('Field Note written in shimmering ink.', 'good'); g.emit('inv'); ui.renderPanel();
+      }, 'alt small') : null));
   }
+  body.appendChild(el('p', { class: 'faint' }, 'Prism Ink writes a Field Note straight away, no study needed.'));
   body.appendChild(pickUpRow(ui, e));
   return { title: 'Warden\'s Desk', body, icon: icon('desk'), narrow: true };
 }

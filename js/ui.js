@@ -180,6 +180,28 @@ export class UI {
   }
   hideTip() { this.$('tooltip').classList.add('hidden'); }
 
+  // ───────── tips (shown once each) ─────────
+  tip(id, title, text) {
+    const s = this.game.state;
+    s.tips ||= {};
+    if (s.tips[id] || (this.tipQ || []).some((t) => t.id === id)) return;
+    (this.tipQ ||= []).push({ id, title, text });
+    if (!this.tipOpen) this.nextTip();
+  }
+  nextTip() {
+    const card = this.$('tipcard');
+    const t = (this.tipQ || []).shift();
+    if (!t) { card.classList.add('hidden'); this.tipOpen = false; return; }
+    this.tipOpen = true;
+    this.game.state.tips[t.id] = true;
+    card.innerHTML = '';
+    card.appendChild(el('div', { class: 'tt' }, t.title));
+    card.appendChild(el('p', {}, t.text));
+    card.appendChild(el('button', { class: 'btn small', onclick: () => this.nextTip() }, 'Got it'));
+    card.classList.remove('hidden');
+    this.audio?.play('mail');
+  }
+
   // ───────── toasts ─────────
   toast(text, kind = 'info', icon = null) {
     const box = this.$('toasts');
@@ -306,7 +328,7 @@ export class UI {
     if (this.panel || this.inDialogue()) { pr.classList.add('hidden'); return; }
     if (placing) {
       pr.classList.remove('hidden');
-      pr.innerHTML = this.isTouch ? `Tap a tile to ${placing}` : `<kbd>Click</kbd>${esc(placing)}${placing.startsWith('place') ? ' · <kbd>R</kbd>turn' : ''}`;
+      pr.innerHTML = this.isTouch ? `Tap a tile to ${placing}` : `<kbd>Click</kbd>${esc(placing)}${this.placeTurns ? ' · <kbd>R</kbd>turn' : ''}`;
       return;
     }
     if (!target) { pr.classList.add('hidden'); return; }

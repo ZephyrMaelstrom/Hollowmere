@@ -282,7 +282,7 @@ M('frostpine', 'blushcherry', 'frostberry', 0.08);
 M('thornpalm', 'charbark', 'emberbark', 0.08, { biome: 'ashvent' }, 'Only where the ground smokes.');
 M('tanglewood', 'duskplum', 'nightebony', 0.06);
 M('nightebony', 'glowcap', 'lanternfig', 0.04, { biome: 'hollow' }, 'Only in the lightless Hollow.');
-M('spireglass', 'lanternfig', 'heartwood', 0.01, { carrier: 'verdant' }, 'Only when the pollen is carried by the Verdant Matriarch herself.');
+M('spireglass', 'lanternfig', 'heartwood', 0.02, { carrier: 'verdant' }, 'Only when the pollen is carried by the Verdant Matriarch herself.');
 
 // Flitters
 M('meadowpale', 'ochreskipper', 'copperwing', 0.12);
@@ -292,7 +292,7 @@ M('meadowpale', 'jadetail', 'admiral', 0.08);
 M('mossback', 'frostwing', 'hawkmoth', 0.08);
 M('jewelwing', 'lanternmoth', 'prismwing', 0.06);
 M('prismwing', 'ashmoth', 'ashenmonarch', 0.04, { biome: 'ashvent' }, 'Only where the ground smokes.');
-M('prismwing', 'silkspinner', 'dawnwing', 0.01, { festival: 'longday' }, 'Only on the Longest Day.');
+M('prismwing', 'silkspinner', 'dawnwing', 0.03, { festival: 'longday' }, 'Only on the Longest Day.');
 
 export const MUT_INDEX = {};
 for (const m of MUTATIONS) {

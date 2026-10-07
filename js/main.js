@@ -7,6 +7,7 @@ import { Renderer } from './render.js';
 import { UI } from './ui.js';
 import { Audio } from './audio.js';
 import { Saver } from './save.js';
+import { bindTips } from './tips.js';
 import { ITEMS } from './data/items.js';
 import { STRUCTURES } from './data/structures.js';
 import { SPECIES } from './data/species.js';
@@ -27,6 +28,7 @@ let walkTo = null; // { x, y, then }
 let lastFrame = performance.now();
 let walkAnim = 0;
 let catchingUp = false;
+let tipTick = () => {};
 
 function setLoad(p, text) { $('load-fill').style.width = Math.round(p * 100) + '%'; if (text) $('load-text').textContent = text; }
 
@@ -44,6 +46,7 @@ async function boot() {
   renderer = new Renderer($('game'), game);
   ui = new UI(game, sim, actions, story, renderer, audio);
   ui.saver = saver;
+  tipTick = bindTips(game, ui, story);
   window.HM = { game, sim, actions, story, ui, renderer, saver };
   renderer.resize();
   setLoad(0.4, 'Tending the estate…');
@@ -65,6 +68,7 @@ async function boot() {
 // Simulate missed time in chunks, with a progress bar.
 async function catchUp(ms, report) {
   catchingUp = true;
+  game.quiet = true;
   let capped = false;
   if (ms > MAX_AWAY) { game.now = Date.now() - MAX_AWAY; ms = MAX_AWAY; capped = true; }
   const dayBefore = T.localDayIndex(game.now);
@@ -83,6 +87,7 @@ async function catchUp(ms, report) {
   const log = sim.log; sim.log = null;
   if (showBar) loading.classList.add('hidden');
   catchingUp = false;
+  game.quiet = false;
   const newDay = T.localDayIndex(Date.now()) !== dayBefore;
   if (report && ms > 60000) ui.open('away', { log, secs: ms / 1000, capped, newDay });
   renderer.chunks.clear();
@@ -218,6 +223,8 @@ function nearestTarget() {
     const dot = (dx * fdx + dy * fdy) / (d || 1);
     d -= dot * 0.8;
     if (tg.kind === 'decor') d += 0.6;
+    if (tg.kind === 'grove') d += 0.35;
+    if (tg.kind === 'wildhive' || tg.kind === 'npc') d -= 0.4;
     if (tg.kind === 'struct' && tg.e.s === 'path') continue;
     if (d < bd) { bd = d; best = tg; }
   }
@@ -359,7 +366,7 @@ function updateGhost() {
   }
 }
 
-let storyT = 0;
+let storyT = 0, wpT = 0;
 function frame(now) {
   const dt = Math.min(0.1, (now - lastFrame) / 1000);
   lastFrame = now;
@@ -375,10 +382,14 @@ function frame(now) {
   updateNPCs(dt);
   updateGhost();
   const hp = heldPlaceable();
+  ui.placeTurns = !!(hp && hp.st && hp.st.dir);
   const tg = nearestTarget();
   ui.updatePrompt(tg, hp ? (hp.kind === 'place' ? 'place ' + hp.st.name : 'plant ' + SPECIES[hp.sp].name) : null);
   if (!mouse.in && tg && !ui.panel) ui.highlight = { x: tg.x, y: tg.y, w: tg.w, h: tg.h };
+  wpT -= dt;
+  if (wpT <= 0) { wpT = 0.5; ui.waypoint = game.state.intro && game.state.settings.waypoint !== false ? story.questTarget() : null; }
   ui.update(dt);
+  if (!catchingUp) tipTick(dt);
   const region = game.regionAt(game.state.player.x, game.state.player.y);
   const mood = region === 'hollow' ? 'dark' : T.isNight(game.now) ? 'night' : region === 'rimeback' ? 'cold' : region === 'sunscar' || region === 'ashvent' ? 'hot' : 'day';
   audio.update(dt, mood);
