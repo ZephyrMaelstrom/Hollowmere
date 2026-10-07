@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#142822">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="Hollowmere: breed hummers, groves and flitters, build a living estate and wake the Heartroot.">
+  <title>Hollowmere</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Pixelify+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="ui">
+    <div id="hud-top">
+      <div id="hud-left" class="hud-card">
+        <div id="hud-clock"><span id="hud-sky"></span><span id="hud-time"></span><span id="hud-season"></span></div>
+        <div id="hud-place"></div>
+        <div id="hud-money"><span class="coin"></span><span id="hud-crowns">0</span><span id="hud-rank"></span></div>
+      </div>
+      <div id="hud-quest" class="hud-card" role="button" tabindex="0"></div>
+      <div id="hud-buttons">
+        <button data-panel="bag" title="Bag (I)"><span class="ico ico-bag"></span><span class="lbl">Bag</span></button>
+        <button data-panel="craft" title="Craft (C)"><span class="ico ico-craft"></span><span class="lbl">Craft</span></button>
+        <button data-panel="codex" title="Codex (K)"><span class="ico ico-codex"></span><span class="lbl">Codex</span></button>
+        <button data-panel="journal" title="Journal (J)"><span class="ico ico-journal"></span><span class="lbl">Journal</span></button>
+        <button data-panel="map" title="Map (M)"><span class="ico ico-map"></span><span class="lbl">Map</span></button>
+        <button data-panel="settings" title="Menu (Esc)"><span class="ico ico-menu"></span><span class="lbl">Menu</span></button>
+      </div>
+    </div>
+    <div id="power-pill" class="hud-card hidden"></div>
+    <div id="prompt" class="hidden"></div>
+    <div id="hotbar"></div>
+    <div id="toasts" aria-live="polite"></div>
+    <div id="tipcard" class="hud-card hidden" role="status"></div>
+    <div id="panel-wrap" class="hidden"><div id="panel" role="dialog" aria-modal="true"></div></div>
+    <div id="dialogue" class="hidden"></div>
+    <div id="tooltip" class="hidden"></div>
+    <div id="touch">
+      <div id="stick"><div id="stick-knob"></div></div>
+      <div id="touch-buttons">
+        <button id="btn-use">Use</button>
+        <button id="btn-rot" class="hidden">Turn</button>
+      </div>
+    </div>
+    <div id="loading">
+      <div class="load-title">Hollowmere</div>
+      <div class="load-sub" id="load-text">Waking the valley…</div>
+      <div class="load-bar"><div id="load-fill"></div></div>
+    </div>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

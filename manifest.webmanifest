@@ -1,0 +1,11 @@
+{
+  "name": "Hollowmere",
+  "short_name": "Hollowmere",
+  "description": "Breed hummers, groves and flitters, build a living estate and wake the Heartroot.",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#142822",
+  "theme_color": "#142822",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
