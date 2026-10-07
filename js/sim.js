@@ -4,7 +4,7 @@ import { ITEMS } from './data/items.js';
 import { MACHINE } from './data/recipes.js';
 import { SPECIES } from './data/species.js';
 import { val, species, inactiveSpecies, tolerates, breed, cloneGenome, expressedId, trait } from './genetics.js';
-import { totalItems, pushOut, addToSlots, canMerge, mkSpecimen, matchesTag, cloneStack, mk } from './inv.js';
+import { totalItems, pushOut, addToSlots, canMerge, mkSpecimen, matchesTag, cloneStack, mk, maxStack } from './inv.js';
 import { DIRS, pick, clamp } from './util.js';
 import { W, H } from './world.js';
 import * as T from './time.js';
@@ -193,7 +193,7 @@ export class Sim {
     if (thriving) roll(sp.special, 1);
     const gift = val(gm, 'gift');
     if (gift === 'gilding' && Math.random() < 0.08) pushOut(e.out, mk('crown_coin', 1 + Math.floor(Math.random() * 3)));
-    if (gift === 'wonder' && Math.random() < 0.05) { g.state.renown += 1; g.addRenown(0); }
+    if (gift === 'wonder' && Math.random() < 0.05) g.addRenown(1, true);
     // pollination
     this.hivePollinate(e, gm, cx, cy, reach);
     // frames wear
@@ -214,7 +214,7 @@ export class Sim {
     if (!groves.length) return;
     const target = pick(groves);
     if (e.pollen && e.pollen.src !== target.id && !target.pol && g.ent(e.pollen.src)) {
-      target.pol = { g: cloneGenome(e.pollen.g), carrier: e.matron.sp || expressedId(gm, 'lineage'), at: g.now };
+      target.pol = { g: cloneGenome(e.pollen.g), carrier: e.matron.sp || expressedId(gm, 'lineage'), at: g.now, time: g.isNight() || g.regionAt(target.x, target.y) === 'hollow' ? 'night' : 'day' };
       g.stat('pollinations');
     }
     const src = pick(groves);
@@ -338,7 +338,7 @@ export class Sim {
   dropHybrid(e) {
     const g = this.game;
     const n = g.hasTool('grafting_knife') ? 2 : 1;
-    const ctx = this.mutCtx(e.x, e.y, { carrier: e.pol.carrier, nearGroves: new Set(), mutMult: SEASON_MODS[g.seasonIdx()].mut });
+    const ctx = this.mutCtx(e.x, e.y, { carrier: e.pol.carrier, nearGroves: new Set(), mutMult: SEASON_MODS[g.seasonIdx()].mut, ...(e.pol.time ? { time: e.pol.time } : {}) });
     for (let i = 0; i < n; i++) {
       const out = {};
       const child = breed(e.g, e.pol.g, ctx, out);
@@ -382,7 +382,7 @@ export class Sim {
       const targets = g.grovesNear(e.x, e.y, range).filter((t) => t.id !== e.id && !t.pol);
       if (targets.length) {
         const t = pick(targets);
-        t.pol = { g: cloneGenome(e.g), carrier: c.sp, at: g.now };
+        t.pol = { g: cloneGenome(e.g), carrier: c.sp, at: g.now, time: g.isNight() || g.regionAt(t.x, t.y) === 'hollow' ? 'night' : 'day' };
         g.stat('pollinations');
       }
     }
@@ -484,11 +484,11 @@ export class Sim {
     if (e.cur !== r.id) { e.cur = r.id; e.prog = 0; }
     let speed = 1;
     if (st.power) {
-      speed = this.powerSat > 0.02 ? this.powerSat : st.hand;
+      speed = Math.max(this.powerSat > 0.02 ? this.powerSat : 0, st.hand || 0);
       if (speed <= 0) { e.on = false; e.status = 'Needs power'; return st.power; }
     }
     e.on = true;
-    e.status = speed < 0.5 && st.power && this.powerSat <= 0.02 ? 'Working slowly by hand' : 'Working';
+    e.status = st.power && this.powerSat < (st.hand || 0) ? 'Working slowly by hand' : 'Working';
     e.prog += (dt * speed) / r.time;
     if (e.prog >= 1) this.finishRecipe(e, r);
     return st.power || 0;
@@ -561,8 +561,8 @@ export class Sim {
       return false;
     }
     if (st.kind === 'machine') return this.machineAccepts(t, s.id);
-    if (t.s === 'chest') return t.slots.some((x) => !x || (canMerge(x, s) && x.n < 99));
-    if (t.s === 'postbox') return true;
+    if (t.s === 'chest') return t.slots.some((x) => !x || (canMerge(x, s) && x.n < maxStack(s.id)));
+    if (t.s === 'postbox') return this.game.state.vault.some((x) => !x || (canMerge(x, s) && x.n < maxStack(s.id)));
     if (t.s === 'cradle') { if (s.id === 'flitter') return !t.a || !t.b; if (s.id === 'chrysal') return !t.hatch; return false; }
     if (t.s === 'flowerbed') return !t.bloom && ITEMS[s.id].cat === 'seed';
     if (t.s === 'bellows') return !!ITEMS[s.id].fuel && (!t.fuel || (t.fuel.id === s.id && t.fuel.n < 32));
@@ -653,7 +653,8 @@ export class Sim {
     for (const [k, t] of Object.entries(g.state.decorGone)) {
       if (t > g.now) continue;
       const i = +k;
-      if (g.occ[i] || g.floor[i]) { g.state.decorGone[k] = g.now + 3600e3; continue; }
+      const tx = i % W, ty = Math.floor(i / W);
+      if (g.occ[i] || g.floor[i] || g.bodyOverlaps(tx, ty)) { g.state.decorGone[k] = g.now + 600e3; continue; }
       w.decor[i] = w.decor0[i];
       delete g.state.decorGone[k];
       g.emit('tileChanged', { x: i % W, y: Math.floor(i / W) });

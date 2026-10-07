@@ -60,10 +60,36 @@ function bagToContainer(ui, i, accept) {
   ui.game.emit('inv');
   ui.renderPanel();
 }
-function takeToBag(ui, stack, remove) {
+// Move a stack to the bag, but only if it is still where the panel showed it.
+// Panels redraw once a second while the estate keeps changing underneath them.
+function giveBack(ui, stack) {
   const left = ui.game.give(cloneStack(stack), false);
-  if (left > 0) { ui.toast('Your bag and Vault are full.', 'warn'); return; }
-  remove();
+  if (left >= stack.n) { ui.toast('Your bag and Vault are full.', 'warn'); return stack.n; }
+  if (left > 0) ui.toast('Your bag and Vault are full: took what fits.', 'warn');
+  return left;
+}
+function takeToBag(ui, stack, remove, stillThere = () => true) {
+  if (!stack || stack.n <= 0 || !stillThere()) { ui.renderPanel(); return; }
+  const left = giveBack(ui, stack);
+  if (left === stack.n) return;
+  if (left > 0) stack.n = left; else remove();
+  ui.game.emit('inv');
+  ui.renderPanel();
+}
+function takeFromList(ui, list, s) {
+  takeToBag(ui, s, () => { const i = list.indexOf(s); if (i >= 0) list.splice(i, 1); }, () => list.includes(s));
+}
+function takeFromKey(ui, obj, key, s) {
+  takeToBag(ui, s, () => { obj[key] = null; }, () => obj[key] === s);
+}
+function takeAll(ui, list) {
+  while (list.length) {
+    const s = list[0];
+    if (!s || s.n <= 0) { list.shift(); continue; }
+    const left = giveBack(ui, s);
+    if (left > 0) { s.n = left; break; }
+    list.shift();
+  }
   ui.game.emit('inv');
   ui.renderPanel();
 }
@@ -254,11 +280,11 @@ function housing(ui, e) {
     const mst = { id: 'matron', n: 1, g: m.g, sp: m.sp, mate: m.mate, pristine: m.pristine, gen: m.gen, an: true };
     slots.appendChild(el('div', { class: 'cslot' }, ui.slotEl(mst, { onclick: () => { ui.sel = 'matron'; ui.renderPanel(); } }), el('span', { class: 'lbl-sm' }, 'Matron')));
   } else {
-    slots.appendChild(cs('Heiress', e.heiress, () => takeToBag(ui, e.heiress, () => (e.heiress = null))));
-    slots.appendChild(cs('Courier', e.courier, () => takeToBag(ui, e.courier, () => (e.courier = null))));
+    slots.appendChild(cs('Heiress', e.heiress, () => takeFromKey(ui, e, 'heiress', e.heiress)));
+    slots.appendChild(cs('Courier', e.courier, () => takeFromKey(ui, e, 'courier', e.courier)));
   }
-  for (let i = 0; i < e.frames.length; i++) slots.appendChild(cs('Frame', e.frames[i], () => takeToBag(ui, e.frames[i], () => (e.frames[i] = null))));
-  for (let i = 0; i < e.mods.length; i++) slots.appendChild(cs('Module', e.mods[i], () => takeToBag(ui, e.mods[i], () => (e.mods[i] = null))));
+  for (let i = 0; i < e.frames.length; i++) slots.appendChild(cs('Frame', e.frames[i], () => takeFromKey(ui, e.frames, i, e.frames[i])));
+  for (let i = 0; i < e.mods.length; i++) slots.appendChild(cs('Module', e.mods[i], () => takeFromKey(ui, e.mods, i, e.mods[i])));
   top.appendChild(slots);
   if (e.matron) {
     const m = e.matron, sp = SPECIES[m.sp];
@@ -270,14 +296,14 @@ function housing(ui, e) {
       top.appendChild(el('div', { class: 'box', style: { marginTop: '8px' } }, genomeTable(m.g, 'h'), el('h3', {}, 'Her Courier'), genomeTable(m.mate, 'h'),
         el('div', { class: 'row', style: { marginTop: '6px' } }, btn('Remove Matron', () => {
           const s = { id: 'matron', n: 1, g: m.g, sp: m.sp, mate: m.mate, pristine: m.pristine, gen: m.gen, life: m.life, an: true };
-          takeToBag(ui, s, () => { e.matron = null; e.work = false; });
+          takeToBag(ui, s, () => { e.matron = null; e.work = false; }, () => e.matron === m);
         }, 'danger small'))));
     }
     const reach = Math.round(val(m.g, 'reach') * st.housing.reach);
     const info = el('div', { class: 'box', style: { marginTop: '8px' } });
     info.appendChild(climateLine(sp, m.g, env));
     info.appendChild(el('div', { class: 'kv', style: { marginTop: '4px' } },
-      el('span', {}, 'Forages'), el('span', {}, `${trait(m.g, 'bloom').name} within ${reach} tiles (${g.bloomCount(val(m.g, 'bloom'), Math.round(e.x), Math.round(e.y), reach)} found)`),
+      el('span', {}, 'Forages'), el('span', {}, `${trait(m.g, 'bloom').name} within ${reach} tiles (${g.bloomCount(val(m.g, 'bloom'), Math.round(sim.housingCenter(e)[0]), Math.round(sim.housingCenter(e)[1]), reach)} found)`),
       el('span', {}, 'Works'), el('span', {}, `${trait(m.g, 'rhythm').name}, ${trait(m.g, 'hardiness').name}`),
       el('span', {}, 'Makes'), el('span', {}, [...sp.products.map(([id]) => ITEMS[id].name), ...sp.special.map(([id]) => ITEMS[id].name + ' (when thriving)')].join(', ')),
       el('span', {}, 'Thriving'), el('span', {}, e.thriving ? 'Yes: exactly its home climate' : 'No: specialty products need its exact home climate')));
@@ -294,10 +320,10 @@ function housing(ui, e) {
   // Output
   top.appendChild(el('h3', {}, `Output (${totalItems(e.out)}/64)`));
   const og = el('div', { class: 'grid' });
-  e.out.forEach((s, i) => og.appendChild(ui.slotEl(s, { onclick: () => takeToBag(ui, s, () => e.out.splice(e.out.indexOf(s), 1)) })));
+  e.out.forEach((s, i) => og.appendChild(ui.slotEl(s, { onclick: () => takeFromList(ui, e.out, s) })));
   if (!e.out.length) og.appendChild(el('span', { class: 'faint' }, 'Nothing yet.'));
   top.appendChild(og);
-  if (e.out.length) top.appendChild(el('div', { class: 'row', style: { marginTop: '6px' } }, btn('Take all', () => { while (e.out.length) { const s = e.out[0]; if (ui.game.give(cloneStack(s), false) > 0) break; e.out.shift(); } ui.game.emit('inv'); ui.renderPanel(); }, 'small')));
+  if (e.out.length) top.appendChild(el('div', { class: 'row', style: { marginTop: '6px' } }, btn('Take all', () => takeAll(ui, e.out), 'small')));
   top.appendChild(el('label', { class: 'row', style: { marginTop: '8px', cursor: 'pointer' } },
     el('input', { type: 'checkbox', checked: e.auto ? true : undefined, onchange: (ev) => { e.auto = ev.target.checked; } }),
     el('span', {}, 'Keep the line going: when the Matron dies, load her new Heiress and a Courier automatically')));
@@ -373,15 +399,15 @@ function machine(ui, e) {
   top.appendChild(rl);
   top.appendChild(el('h3', {}, 'Inside'));
   const ib = el('div', { class: 'grid' });
-  e.inb.forEach((s) => ib.appendChild(ui.slotEl(s, { onclick: () => takeToBag(ui, s, () => e.inb.splice(e.inb.indexOf(s), 1)) })));
+  e.inb.forEach((s) => ib.appendChild(ui.slotEl(s, { onclick: () => takeFromList(ui, e.inb, s) })));
   if (!e.inb.length) ib.appendChild(el('span', { class: 'faint' }, 'Empty. Put ingredients in from your bag, or feed it with a Runnel.'));
   top.appendChild(ib);
   top.appendChild(el('h3', {}, 'Output'));
   const og = el('div', { class: 'grid' });
-  e.out.forEach((s) => og.appendChild(ui.slotEl(s, { onclick: () => takeToBag(ui, s, () => e.out.splice(e.out.indexOf(s), 1)) })));
+  e.out.forEach((s) => og.appendChild(ui.slotEl(s, { onclick: () => takeFromList(ui, e.out, s) })));
   if (!e.out.length) og.appendChild(el('span', { class: 'faint' }, 'Nothing yet.'));
   top.appendChild(og);
-  if (e.out.length) top.appendChild(el('div', { class: 'row', style: { marginTop: '6px' } }, btn('Take all', () => { while (e.out.length) { if (g.give(cloneStack(e.out[0]), false) > 0) break; e.out.shift(); } g.emit('inv'); ui.renderPanel(); }, 'small')));
+  if (e.out.length) top.appendChild(el('div', { class: 'row', style: { marginTop: '6px' } }, btn('Take all', () => takeAll(ui, e.out), 'small')));
   const accept = (s) => {
     if (s.g || !sim.machineAccepts(e, s.id)) return false;
     const room = 32 - sim.countIn(e, s.id);
@@ -406,10 +432,10 @@ function cradle(ui, e) {
   top.appendChild(el('div', { class: 'status' }, e.status));
   top.appendChild(el('p', { class: 'faint' }, 'Two Flitters lay Chrysals here; a Chrysal hatches into a Flitter. Pairing takes a minute, hatching 45 seconds.'));
   const row = el('div', { class: 'row', style: { alignItems: 'flex-start' } });
-  const cs = (label, stack, clear) => el('div', { class: 'cslot' }, ui.slotEl(stack, { label, onclick: stack ? () => takeToBag(ui, stack, clear) : null }), el('span', { class: 'lbl-sm' }, label));
-  row.appendChild(cs('Flitter', e.a, () => (e.a = null)));
-  row.appendChild(cs('Flitter', e.b, () => (e.b = null)));
-  row.appendChild(cs('Chrysal', e.hatch, () => (e.hatch = null)));
+  const cs = (label, key) => el('div', { class: 'cslot' }, ui.slotEl(e[key], { label, onclick: e[key] ? ((st) => () => takeFromKey(ui, e, key, st))(e[key]) : null }), el('span', { class: 'lbl-sm' }, label));
+  row.appendChild(cs('Flitter', 'a'));
+  row.appendChild(cs('Flitter', 'b'));
+  row.appendChild(cs('Chrysal', 'hatch'));
   top.appendChild(row);
   if (e.a && e.b && e.a.g && e.b.g) {
     const ctx = ui.sim.mutCtx(e.x, e.y);
@@ -423,7 +449,7 @@ function cradle(ui, e) {
   }
   top.appendChild(el('h3', {}, 'Output'));
   const og = el('div', { class: 'grid' });
-  e.out.forEach((s) => og.appendChild(ui.slotEl(s, { onclick: () => takeToBag(ui, s, () => e.out.splice(e.out.indexOf(s), 1)) })));
+  e.out.forEach((s) => og.appendChild(ui.slotEl(s, { onclick: () => takeFromList(ui, e.out, s) })));
   if (!e.out.length) og.appendChild(el('span', { class: 'faint' }, 'Nothing yet.'));
   top.appendChild(og);
   const accept = (s) => {
@@ -442,7 +468,7 @@ function chest(ui, e) {
     return containerShell(ui, e, top, (s) => { const left = addToSlots(g.state.vault, cloneStack(s)); if (left === s.n) { ui.toast('The Vault is full.', 'warn'); return false; } ui.toast(`Posted to the Vault`, 'good'); return s.n - left; }, 'Post Box');
   }
   const grid = el('div', { class: 'grid' });
-  e.slots.forEach((s, i) => grid.appendChild(ui.slotEl(s, { onclick: s ? () => takeToBag(ui, s, () => (e.slots[i] = null)) : null })));
+  e.slots.forEach((s, i) => grid.appendChild(ui.slotEl(s, { onclick: s ? () => takeFromKey(ui, e.slots, i, s) : null })));
   top.appendChild(grid);
   top.appendChild(el('label', { class: 'row', style: { marginTop: '8px', cursor: 'pointer' } },
     el('input', { type: 'checkbox', checked: e.unload ? true : undefined, onchange: (ev) => { e.unload = ev.target.checked; } }),
@@ -468,7 +494,7 @@ function runnel(ui, e) {
   const body = el('div', {});
   body.appendChild(el('p', {}, `Facing ${DIR_NAMES[e.dir]}. ${e.item ? 'Carrying ' + ui.stackTitle(e.item) + '.' : 'Empty.'}`));
   body.appendChild(el('div', { class: 'row' }, btn('Turn', () => { e.dir = (e.dir + 1) % 4; ui.game.emit('tileChanged', e); ui.renderPanel(); }, 'alt small'),
-    e.item ? btn('Take item', () => takeToBag(ui, e.item, () => (e.item = null)), 'small') : null));
+    e.item ? btn('Take item', () => takeFromKey(ui, e, 'item', e.item), 'small') : null));
   if (e.s === 'gate') {
     body.appendChild(el('h3', {}, 'What turns left'));
     body.appendChild(el('p', { class: 'faint' }, 'Items that match turn left of the way the Gate faces. Everything else goes straight on.'));
@@ -504,10 +530,10 @@ function keeper(ui, e) {
   top.appendChild(el('div', { class: 'status' }, e.status || 'Watching'));
   top.appendChild(el('p', { class: 'faint' }, 'Every 5 seconds it gathers what Groves and Cradles within 4 tiles have dropped. Point a Runnel away from it to carry things off.'));
   const og = el('div', { class: 'grid' });
-  e.out.forEach((s) => og.appendChild(ui.slotEl(s, { onclick: () => takeToBag(ui, s, () => e.out.splice(e.out.indexOf(s), 1)) })));
+  e.out.forEach((s) => og.appendChild(ui.slotEl(s, { onclick: () => takeFromList(ui, e.out, s) })));
   if (!e.out.length) og.appendChild(el('span', { class: 'faint' }, 'Nothing gathered yet.'));
   top.appendChild(og);
-  if (e.out.length) top.appendChild(btn('Take all', () => { while (e.out.length) { if (ui.game.give(cloneStack(e.out[0]), false) > 0) break; e.out.shift(); } ui.game.emit('inv'); ui.renderPanel(); }, 'small'));
+  if (e.out.length) top.appendChild(btn('Take all', () => takeAll(ui, e.out), 'small'));
   top.appendChild(pickUpRow(ui, e));
   return { title: 'Groundskeeper', body: top, icon: icon('groundskeeper'), live: true };
 }
@@ -523,7 +549,7 @@ function power(ui, e) {
     g.state.battery = Math.min(sim.powerCap || 30, (g.state.battery || 0) + 25); e.crankT = performance.now(); ui.audio?.play('crank'); g.stat('cranks'); ui.renderPanel();
   })));
   if (e.s === 'bellows') {
-    body.appendChild(el('div', { class: 'row', style: { marginTop: '8px' } }, el('span', {}, 'Fuel:'), ui.slotEl(e.fuel, { label: 'Fuel', onclick: e.fuel ? () => takeToBag(ui, e.fuel, () => (e.fuel = null)) : null }), el('span', { class: 'faint' }, e.burn > 0 ? `burning, ${Math.ceil(e.burn)}s left` : 'cold')));
+    body.appendChild(el('div', { class: 'row', style: { marginTop: '8px' } }, el('span', {}, 'Fuel:'), ui.slotEl(e.fuel, { label: 'Fuel', onclick: e.fuel ? () => takeFromKey(ui, e, 'fuel', e.fuel) : null }), el('span', { class: 'faint' }, e.burn > 0 ? `burning, ${Math.ceil(e.burn)}s left` : 'cold')));
     body.appendChild(el('p', { class: 'faint' }, 'Burns Timber, Leaf Litter, Peat, Phosphor or Verdant Spirit, only while machines want power.'));
     return containerShell(ui, e, body, (s) => { if (!ITEMS[s.id].fuel) return false; if (e.fuel && e.fuel.id !== s.id) return false; if (e.fuel) e.fuel.n += s.n; else e.fuel = cloneStack(s); return s.n; }, st.name, { dim: (s) => !!ITEMS[s.id].fuel });
   }
@@ -557,7 +583,7 @@ function grove(ui, data) {
   if (e.buf && e.buf.length) {
     body.appendChild(el('h3', {}, 'Ready to gather'));
     const og = el('div', { class: 'grid' });
-    e.buf.forEach((s) => og.appendChild(ui.slotEl(s, { onclick: () => takeToBag(ui, s, () => e.buf.splice(e.buf.indexOf(s), 1)) })));
+    e.buf.forEach((s) => og.appendChild(ui.slotEl(s, { onclick: () => takeFromList(ui, e.buf, s) })));
     body.appendChild(og);
     body.appendChild(el('div', { class: 'row', style: { marginTop: '6px' } }, btn('Gather all', () => { ui.actions.harvest(e); ui.renderPanel(); })));
   }
@@ -781,7 +807,7 @@ function home(ui, data, panel) {
   if (tab === 'vault') {
     body.appendChild(el('p', { class: 'faint' }, 'Tap your bag to store, tap the Vault to take. Crafting near home can use the Vault directly.'));
     const vg = el('div', { class: 'grid' });
-    s.vault.forEach((st, i) => vg.appendChild(ui.slotEl(st, { small: true, onclick: st ? () => takeToBag(ui, st, () => (s.vault[i] = null)) : null })));
+    s.vault.forEach((st, i) => vg.appendChild(ui.slotEl(st, { small: true, onclick: st ? () => takeFromKey(ui, s.vault, i, st) : null })));
     body.appendChild(vg);
     body.appendChild(el('div', { class: 'row', style: { margin: '8px 0' } }, btn('Store everything but the hotbar', () => {
       for (let i = 9; i < s.inv.length; i++) { const st = s.inv[i]; if (!st || ITEMS[st.id].tool) continue; const left = addToSlots(s.vault, st); if (left === 0) s.inv[i] = null; else st.n = left; }

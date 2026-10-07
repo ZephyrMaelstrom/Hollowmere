@@ -385,7 +385,6 @@ export class Story {
     if (p.heartwood && p.verdant && p.dawnwing) {
       this.s.awake = true;
       this.s.rank = 4;
-      this.game.addRenown(0);
       this.game.give(mk('conduit', 1));
       this.s.unlocks.conduit = true;
       this.game.emit('awake');

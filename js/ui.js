@@ -276,6 +276,7 @@ export class UI {
   }
   close() {
     if (!this.panel) return;
+    if (this.panel.type === 'intro' && !this.game.state.intro) { this.game.state.intro = true; this.toast('Find a wild hive near the Homestead and scoop it.', 'quest'); }
     this.panel = null;
     this.$('panel-wrap').classList.add('hidden');
     document.body.classList.remove('panel-open');
@@ -319,7 +320,11 @@ export class UI {
     if (this.hudT > 0.3) { this.hudT = 0; this.updateHUD(); }
     if (this.panel) {
       this.panelT += dt;
-      if ((this.panel.live && this.panelT > 1) || this.dirtyPanel) { this.panelT = 0; if (!this.pointerDownInPanel) this.renderPanel(); }
+      if ((this.panel.live && this.panelT > 1) || this.dirtyPanel) {
+        const a = document.activeElement;
+        const typing = a && this.$('panel').contains(a) && ['SELECT', 'INPUT', 'TEXTAREA'].includes(a.tagName);
+        if (!this.pointerDownInPanel && !typing) { this.panelT = 0; this.renderPanel(); }
+      }
     }
   }
 

@@ -305,9 +305,7 @@ export class Actions {
     if (g.floorAt(x, y)) return false;
     const t = w.tile(x, y);
     if ([TILE.PATH, TILE.STONE, TILE.BRIDGE, TILE.SHORE].includes(t) && g.regionAt(x, y) !== 'isle') return t === TILE.SHORE;
-    const p = g.state.player;
-    if (Math.floor(p.x) === x && Math.floor(p.y) === y) return false;
-    return true;
+    return !g.bodyOverlaps(x, y);
   }
 
   pickUp(e) {

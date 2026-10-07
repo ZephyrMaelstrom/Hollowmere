@@ -121,7 +121,7 @@ export class Game {
       if (hash2(x, y, 901) < dens) {
         const spid = pick(WILD_GROVES[r]);
         this.addEnt({ t: 'g', x, y, g: wildGenome(spid), sp: spid, growth: 1, wild: true, buf: [], cyc: Math.random() * 30 });
-        w.decor[w.idx(x, y)] = 0;
+        if (w.decor[w.idx(x, y)]) { w.decor[w.idx(x, y)] = 0; s.decorGone[w.idx(x, y)] = 1e15; }
       }
     }
     // Wild hive spots: next to wild groves, 6 per region (+3 near home)
@@ -286,6 +286,18 @@ export class Game {
     return false;
   }
 
+  // Does the player's (or an NPC's) collision box overlap this rectangle of tiles?
+  bodyOverlaps(x, y, w = 1, h = 1) {
+    const hit = (px, py) => {
+      for (const [cx, cy] of [[px - 0.27, py - 0.19], [px + 0.27, py - 0.19], [px - 0.27, py + 0.09], [px + 0.27, py + 0.09]]) {
+        if (cx >= x && cx < x + w && cy >= y && cy < y + h) return true;
+      }
+      return false;
+    };
+    if (hit(this.state.player.x, this.state.player.y)) return true;
+    return this.npcs.some((n) => hit(n.x, n.y) || hit(n.hx, n.hy));
+  }
+
   canPlace(sid, x, y) {
     const st = STRUCTURES[sid];
     const [w, h] = st.size;
@@ -302,7 +314,7 @@ export class Game {
       else {
         if (this.occ[ty * W + tx]) return 'Something is in the way';
         if (this.floor[ty * W + tx]) { const f = this.ent(this.floor[ty * W + tx]); if (f && f.s !== 'path') return 'There is a runnel there'; }
-        if (Math.floor(p.x) === tx && Math.floor(p.y) === ty) return 'You are standing there';
+        if (this.bodyOverlaps(tx, ty)) return 'You are standing there';
       }
     }
     if (st.water) {

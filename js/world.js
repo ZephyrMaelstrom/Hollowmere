@@ -215,6 +215,8 @@ export class World {
         const d = Math.hypot(x - CX, y - CY);
         if (d < 18 || d > 56) continue;
         if (!farFromAvoid(x, y, 8)) continue;
+        if (this.poi.buildings.some((b) => x >= b.x - 2 && x < b.x + b.w + 2 && y >= b.y - 2 && y < b.y + b.h + 3)) continue;
+        if (Math.hypot(x - this.poi.board[0], y - this.poi.board[1]) < 4 || Math.hypot(x - this.poi.well[0], y - this.poi.well[1]) < 4) continue;
         cands.push([x, y]);
       }
       const chosen = [];
