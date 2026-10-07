@@ -324,7 +324,7 @@ export class Sim {
     let mult = val(e.g, 'vigor') * SEASON_MODS[g.seasonIdx()].fruit;
     if (g.giftNear(e.x, e.y, 'bounty', e.id)) mult *= 1.3;
     for (const [id, p] of species(e.g).products) {
-      if (Math.random() < Math.min(1, p * mult)) { pushOut(e.buf, mk(id, 1)); g.state.seenItems[id] = 1; this.note('fruit'); }
+      if (Math.random() < Math.min(1, p * mult)) { pushOut(e.buf, mk(id, 1)); if (!e.wild) { g.state.seenItems[id] = 1; this.note('fruit'); } }
     }
     if (!e.wild || Math.random() < 0.5) {
       const sc = SCION_CHANCE[val(e.g, 'brood')] || 0.05;

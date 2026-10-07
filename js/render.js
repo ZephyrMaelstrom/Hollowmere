@@ -286,7 +286,7 @@ export class Renderer {
           ctx.drawImage(fs, this.sx(fx) - 5 * z, this.sy(fy) - 4 * z, fs.width * z, fs.height * z);
         }
       }
-      if (e.buf && e.buf.length && stage === 2) this.bubble(e.x + 0.5, e.y - 1.9, now);
+      if (!e.wild && e.buf && e.buf.length && stage === 2) this.bubble(e.x + 0.5, e.y - 1.9, now);
       return;
     }
     if (e.t === 'w') {

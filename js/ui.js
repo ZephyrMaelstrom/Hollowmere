@@ -183,6 +183,7 @@ export class UI {
   // ───────── tips (shown once each) ─────────
   tip(id, title, text) {
     const s = this.game.state;
+    if (this.game.quiet) return;
     s.tips ||= {};
     if (s.tips[id] || (this.tipQ || []).some((t) => t.id === id)) return;
     (this.tipQ ||= []).push({ id, title, text });
